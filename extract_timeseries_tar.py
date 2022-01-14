@@ -38,7 +38,8 @@ def extract_regions_network(map_file):
                                 extractor='local_regions',
                                 standardize=True, detrend=True)
     extractor.fit()
-
+    
+    # create new labels indicating the original network/parcel
     labels = []
     for i in range(atlas_resolution):
         regions_indices_network = np.where(np.array(extractor.index_) == i)
@@ -158,10 +159,11 @@ if __name__ == '__main__':
                                                     demean=True)
             timeseries = extractor.fit_transform(fmri[0].path, confounds=confounds, sample_mask=sample_mask)
 
-            # Estimating connectomes and save for pytorch to load
+            # Estimating connectomes
             corr_measure = ConnectivityMeasure(kind="correlation")
             connectome = corr_measure.fit_transform([timeseries])[0]
 
+            # Save to file
             timeseries = pd.DataFrame(timeseries, columns=labels)
             timeseries.to_csv(timeseries_root_dir / output_filename, sep='\t', index=False)
             connectome = pd.DataFrame(connectome, columns=labels, index=labels)
