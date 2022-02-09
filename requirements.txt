@@ -1,2 +1,3 @@
 git+git://github.com/nilearn/nilearn@186c47c34c036c092a8d735baf25541d510078ec
 pybids
+templateflow
