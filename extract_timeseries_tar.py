@@ -4,45 +4,31 @@ CCNA timeseries extraction and confound removal.
 Save the output to a tar file.
 """
 import os
+import argparse
 import tarfile
 import pathlib
 import pandas as pd
-import numpy as np
-import nibabel as nb
-import templateflow
 import templateflow.api
 import templateflow.conf
-import nilearn
 import nilearn.connectome
 import nilearn.datasets
-import nilearn.regions
 import nilearn.input_data
 import nilearn.interfaces.fmriprep
-import sklearn
+import sklearn.utils
 import bids
 
-USERNAME = os.environ.get("USER")
-# DATA_PATH = "/scratch/" + USERNAME + "/datasets/ukbb/derivatives/fmriprep/fmriprep/"
-DATA_PATH = "/home/ltetrel/Documents/data/ukbb/derivatives/fmriprep/fmriprep"
-DATASET_NAME = "ukbb"
-# ATLAS_PATH = os.path.join(os.path.sep, "scratch",
-#                               USERNAME, "segmented_difumo_atlases")
-# OUTPUT_ROOT_DIR = pathlib.Path.home() / "scratch"
-OUTPUT_ROOT_DIR = pathlib.Path.home()
-ATLAS_PATH = "/home/ltetrel/.cache/templateflow/tpl-MNI152NLin2009cAsym"
-BIDS_INFO = pathlib.Path(__file__).parent / ".bids_info"
 ATLAS_METADATA = {
     'segmented_difumo': {'type': "dynamic",
                          'dimensions': [64, 128, 256, 512, 1024],
                          'resolutions': [2, 3],
-                         'fetcher': "segmented_difumo_fetcher(dimension={dimension}, resolution_mm={resolution}, atlas_path=ATLAS_PATH)"},
+                         'fetcher': "segmented_difumo_fetcher(dimension={dimension}, resolution_mm={resolution}, atlas_path=\"{atlas_path}\")"},
 }
-
 
 def segmented_difumo_fetcher(atlas_path, dimension=64, resolution_mm=3):
 
     templateflow.conf.TF_HOME = pathlib.Path(atlas_path)
     templateflow.conf.init_layout()
+    templateflow.conf.update(local=True)
 
     img_path = str(templateflow.api.get("MNI152NLin2009cAsym", atlas="DiFuMo",
                                         desc=f"{dimension}dimensionsSegmented", resolution=f"0{resolution_mm}", extension=".nii.gz"))
@@ -55,7 +41,7 @@ def segmented_difumo_fetcher(atlas_path, dimension=64, resolution_mm=3):
     return sklearn.utils.Bunch(maps=img_path, labels=labels)
 
 
-def create_atlas_masker(atlas_name, dimension, resolution, nilearn_cache=""):
+def create_atlas_masker(atlas_name, atlas_path, dimension, resolution, nilearn_cache=""):
     """Create masker of all dimensions and resolutions given metadata."""
     if atlas_name not in ATLAS_METADATA.keys():
         raise ValueError("{} not defined!".format(atlas_name))
@@ -63,7 +49,7 @@ def create_atlas_masker(atlas_name, dimension, resolution, nilearn_cache=""):
     curr_atlas['name'] = atlas_name
 
     atlas = eval(curr_atlas['fetcher'].format(
-        dimension=dimension, resolution=resolution))
+        atlas_path=atlas_path, dimension=dimension, resolution=resolution))
     if curr_atlas['type'] == "static":
         masker = nilearn.input_data.NiftiLabelsMasker(
             atlas.maps, detrend=True)
@@ -95,10 +81,10 @@ def create_timeseries_root_dir(file_entitiles, output_dir):
     session = f"ses-{file_entitiles['session']}" if file_entitiles.get(
         'session', False) is not None else None
     if session:
-        timeseries_root_dir = output_dir / subject / session
+        timeseries_root_dir = os.path.join(output_dir, subject, session)
     else:
-        timeseries_root_dir = output_dir / subject
-    timeseries_root_dir.mkdir(parents=True, exist_ok=True)
+        timeseries_root_dir = os.path.join(output_dir, subject)
+    os.makedirs(timeseries_root_dir, exist_ok=True)
 
     return timeseries_root_dir
 
@@ -108,19 +94,50 @@ def bidsish_timeseries_file_name(file_entitiles, layout, atlas_name, dimension):
     pattern = "sub-{subject}[_ses-{session}]_task-{task}[_acq-{acquisition}][_rec-{reconstruction}][_run-{run}][_echo-{echo}]"
     base = layout.build_path(file_entitiles, pattern, validate=False)
     base += f"_atlas-{atlas_name}_network-{dimension}_timeseries.tsv"
-    return base.split('/')[-1]
 
+    return base.split(os.path.sep)[-1]
+
+def get_parser():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter, description="", epilog="""
+    Documentation at https://github.com/ccna-biomarkers/ccna_ts_extraction/tree/masker_with_input_atlas
+    """)
+
+    parser.add_argument(
+        "-i", "--input_dir", required=False, default=".", help="Input fmripre derivative directory in BIDS, inside \"fmriprep/fmriprep\" (default: \"./\")",
+    )
+
+    parser.add_argument(
+        "--atlas-path", required=True, help="Input directory path to atlas",
+    )
+
+    parser.add_argument(
+        "--dataset-name", required=True, help="Dataset name",
+    )
+
+    parser.add_argument(
+        "-o", "--output-dir", required=False, default=".", help="Output directory (default: \"./\")",
+    )
+
+    return parser
 
 if __name__ == '__main__':
-    layout = bids.BIDSLayout(DATA_PATH, config=['bids', 'derivatives'])
-    # layout.save(BIDS_INFO)
+
+    args = get_parser().parse_args()
+
+    data_path = args.input_dir
+    atlas_path = args.atlas_path
+    dataset_name = args.dataset_name
+    output_root_dir = args.output_dir
+
+    layout = bids.BIDSLayout(data_path, config=['bids', 'derivatives'])
     subject_list = layout.get(return_type='id', target='subject')
 
     for atlas_name in ATLAS_METADATA.keys():
         print("-- {} --".format(atlas_name))
-        dataset_title = f"dataset-{DATASET_NAME}_atlas-{atlas_name}"
-        output_dir = OUTPUT_ROOT_DIR / dataset_title
-        output_dir.mkdir(parents=True, exist_ok=True)
+        dataset_title = f"dataset-{dataset_name}_atlas-{atlas_name}"
+        output_dir = os.path.join(output_root_dir, dataset_title)
+        os.makedirs(output_dir, exist_ok=True)
         for subject in subject_list:
             print(f"sub-{subject}")
             # TODO: loop through all
@@ -135,8 +152,9 @@ if __name__ == '__main__':
                     file_entitiles, output_dir)
                 for dimension in ATLAS_METADATA[atlas_name]['dimensions']:
                     for resolution in ATLAS_METADATA[atlas_name]['resolutions']:
+                        print(f"\t dim{dimension} - res0{resolution}")
                         masker, labels = create_atlas_masker(
-                            atlas_name, dimension, resolution, nilearn_cache="")
+                            atlas_name, atlas_path, dimension, resolution)
                         output_filename = bidsish_timeseries_file_name(
                             file_entitiles, layout, atlas_name, dimension)
                         confounds, sample_mask = nilearn.interfaces.fmriprep.load_confounds(fmri[ii].path,
@@ -151,16 +169,15 @@ if __name__ == '__main__':
                         corr_measure = nilearn.connectome.ConnectivityMeasure(
                             kind="correlation")
                         connectome = corr_measure.fit_transform([timeseries])[0]
-
                         # Save to file
                         timeseries = pd.DataFrame(timeseries, columns=labels)
-                        timeseries.to_csv(timeseries_root_dir /
-                                          output_filename, sep='\t', index=False)
+                        timeseries.to_csv(os.path.join(timeseries_root_dir, output_filename), sep='\t', index=False)
                         connectome = pd.DataFrame(
                             connectome, columns=labels, index=labels)
                         connectome.to_csv(
-                            timeseries_root_dir / output_filename.replace("timeseries", "connectome"), sep='\t')
+                            os.path.join(timeseries_root_dir, output_filename.replace("timeseries", "connectome")), sep='\t')
 
     # tar the dataset
-    with tarfile.open(OUTPUT_ROOT_DIR / f"{dataset_title}.tar.gz", "w:gz") as tar:
+    tar_path = os.path.join(output_root_dir, f"{dataset_title}.tar.gz")
+    with tarfile.open(tar_path, "w:gz") as tar:
         tar.add(output_dir, arcname=output_dir.name)
