@@ -18,12 +18,21 @@ import sklearn.utils
 import bids
 
 ATLAS_METADATA = {
+    'difumo': {'type': "dynamic",
+               'dimensions': [64, 128, 256, 512, 1024],
+               'resolutions': [2, 3],
+               'label_idx': 1,
+               'fetcher': "nilearn.datasets.fetch_atlas_difumo(dimension={dimension}, resolution_mm={resolution})"},
     'segmented_difumo': {'type': "dynamic",
                          'dimensions': [64, 128, 256, 512, 1024],
                          'resolutions': [2, 3],
                          'fetcher': "segmented_difumo_fetcher(dimension={dimension}, resolution_mm={resolution}, atlas_path=\"{atlas_path}\")"},
 }
 
+#TODO: mask data using subject mask
+#TODO: wait you PR before making a standalone tool (templateflow downloading, confound parameters loading)
+#TODO: QC timeseries https://github.com/SIMEXP/mapsmasker_benchmark/blob/main/mapsmasker_benchmark/main.py
+#TODO: 
 def segmented_difumo_fetcher(atlas_path, dimension=64, resolution_mm=3):
 
     templateflow.conf.TF_HOME = pathlib.Path(atlas_path)
@@ -177,7 +186,7 @@ if __name__ == '__main__':
                         connectome.to_csv(
                             os.path.join(timeseries_root_dir, output_filename.replace("timeseries", "connectome")), sep='\t')
 
-    # tar the dataset
-    tar_path = os.path.join(output_root_dir, f"{dataset_title}.tar.gz")
-    with tarfile.open(tar_path, "w:gz") as tar:
-        tar.add(output_dir, arcname=output_dir.name)
+        # tar the dataset
+        tar_path = os.path.join(output_root_dir, f"{dataset_title}.tar.gz")
+        with tarfile.open(tar_path, "w:gz") as tar:
+            tar.add(output_dir, arcname=os.path.dirname(output_dir))
