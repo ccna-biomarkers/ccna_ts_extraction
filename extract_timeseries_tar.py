@@ -22,7 +22,7 @@ ATLAS_METADATA = {
                'dimensions': [64, 128, 256, 512, 1024],
                'resolutions': [2, 3],
                'label_idx': 1,
-               'fetcher': "nilearn.datasets.fetch_atlas_difumo(dimension={dimension}, resolution_mm={resolution})"},
+               'fetcher': "nilearn.datasets.fetch_atlas_difumo(dimension={dimension}, resolution_mm={resolution}, data_dir=\"{atlas_path}\")"},
     'segmented_difumo': {'type': "dynamic",
                          'dimensions': [64, 128, 256, 512, 1024],
                          'resolutions': [2, 3],
@@ -31,8 +31,7 @@ ATLAS_METADATA = {
 
 #TODO: mask data using subject mask
 #TODO: wait you PR before making a standalone tool (templateflow downloading, confound parameters loading)
-#TODO: QC timeseries https://github.com/SIMEXP/mapsmasker_benchmark/blob/main/mapsmasker_benchmark/main.py
-#TODO: 
+#TODO: QC timeseries https://github.com/SIMEXP/mapsmasker_benchmark/blob/main/mapsmasker_benchmark/main.py 
 def segmented_difumo_fetcher(atlas_path, dimension=64, resolution_mm=3):
 
     templateflow.conf.TF_HOME = pathlib.Path(atlas_path)
