@@ -61,6 +61,18 @@ ATLAS_METADATA = {
         },
     }
 
+LOAD_CONFOUNDS_PARAMS = {
+    'strategy': ['motion', 'high_pass', 'wm_csf', 'scrub', 'global_signal'],
+    'motion': 'basic',
+    'wm_csf': 'basic',
+    'global_signal': 'basic',
+    'scrub': 5,
+    'fd_threshold': 0.5,
+    'std_dvars_threshold': None,
+    'demean': True
+}
+
+
 #TODO: QC timeseries https://github.com/SIMEXP/mapsmasker_benchmark/blob/main/mapsmasker_benchmark/main.py
 def fetch_atlas_path(atlas_name, description_keywords, atlas_path, template):
     """
@@ -270,11 +282,7 @@ if __name__ == '__main__':
                         output_filename = bidsish_timeseries_file_name(
                             file_entitiles, layout, atlas_name, dimension)
                         confounds, sample_mask = nilearn.interfaces.fmriprep.load_confounds(fmri[ii].path,
-                                                                                            strategy=[
-                                                                                                'motion', 'high_pass', 'wm_csf', 'scrub', 'global_signal'],
-                                                                                            motion='basic', wm_csf='basic', global_signal='basic',
-                                                                                            scrub=5, fd_threshold=0.5, std_dvars_threshold=None,
-                                                                                            demean=True)
+                                                                                            **LOAD_CONFOUNDS_PARAMS)
                         masker.set_parameters(mask_img=brain_mask[ii].path)
                         timeseries = masker.fit_transform(
                             fmri[ii].path, confounds=confounds, sample_mask=sample_mask)
