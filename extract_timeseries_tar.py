@@ -29,9 +29,21 @@ ATLAS_METADATA = {
                          'fetcher': "segmented_difumo_fetcher(dimension={dimension}, resolution_mm={resolution}, atlas_path=\"{atlas_path}\")"},
 }
 
+LOAD_CONFOUNDS_PARAMS = {
+    'strategy': ['motion', 'high_pass', 'wm_csf', 'scrub', 'global_signal'],
+    'motion': 'basic',
+    'wm_csf': 'basic',
+    'global_signal': 'basic',
+    'scrub': 5,
+    'fd_threshold': 0.5,
+    'std_dvars_threshold': None,
+    'demean': True
+}
+
+
 #TODO: mask data using subject mask
 #TODO: wait you PR before making a standalone tool (templateflow downloading, confound parameters loading)
-#TODO: QC timeseries https://github.com/SIMEXP/mapsmasker_benchmark/blob/main/mapsmasker_benchmark/main.py 
+#TODO: QC timeseries https://github.com/SIMEXP/mapsmasker_benchmark/blob/main/mapsmasker_benchmark/main.py
 def segmented_difumo_fetcher(atlas_path, dimension=64, resolution_mm=3):
 
     templateflow.conf.TF_HOME = pathlib.Path(atlas_path)
@@ -166,11 +178,7 @@ if __name__ == '__main__':
                         output_filename = bidsish_timeseries_file_name(
                             file_entitiles, layout, atlas_name, dimension)
                         confounds, sample_mask = nilearn.interfaces.fmriprep.load_confounds(fmri[ii].path,
-                                                                                            strategy=[
-                                                                                                'motion', 'high_pass', 'wm_csf', 'scrub', 'global_signal'],
-                                                                                            motion='basic', wm_csf='basic', global_signal='basic',
-                                                                                            scrub=5, fd_threshold=0.5, std_dvars_threshold=None,
-                                                                                            demean=True)
+                                                                                            **LOAD_CONFOUNDS_PARAMS)
                         timeseries = masker.fit_transform(
                             fmri[ii].path, confounds=confounds, sample_mask=sample_mask)
                         # Estimating connectomes
