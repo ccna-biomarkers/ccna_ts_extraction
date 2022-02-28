@@ -127,7 +127,7 @@ def fetch_atlas_path(atlas_name, template, resolution, description_keywords):
     return sklearn.utils.Bunch(maps=img_path, labels=labels, type=atlas_type)
 
 
-def generate_templateflow_parameters(cur_atlas_meta, file_type, resolution, description_keywords):
+def generate_templateflow_parameters(cur_atlas_meta, file_type, description_keywords):
     """
     Generate a dictionary containing parameters for TemplateFlow quiery.
 
