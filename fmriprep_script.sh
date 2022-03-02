@@ -18,3 +18,4 @@ scp -r $SCRATCH/atlases $SLURM_TMPDIR/
 source /home/ltetrel/.virtualenvs/ts_extraction/bin/activate
 
 python3 /home/ltetrel/ccna_ts_extraction/extract_timeseries_tar.py -i $SLURM_TMPDIR/ukbb/derivatives/fmriprep/fmriprep/ --atlas-path $SLURM_TMPDIR/atlases --dataset-name ukbb -o $SLURM_TMPDIR
+exit 0
