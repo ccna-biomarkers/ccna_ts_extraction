@@ -129,8 +129,6 @@ def fetch_atlas_path(atlas_name, template, resolution, description_keywords):
 
     img_parameters = generate_templateflow_parameters(cur_atlas_meta, "atlas", resolution, description_keywords)
     label_parameters = generate_templateflow_parameters(cur_atlas_meta, "label", resolution, description_keywords)
-    print(img_parameters)
-    print(label_parameters)
     img_path = templateflow.api.get(template, raise_empty=True, **img_parameters)
     img_path = str(img_path)
     label_path = templateflow.api.get(template, raise_empty=True, **label_parameters)
