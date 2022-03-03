@@ -81,7 +81,7 @@ def update_templateflow_path(atlas_name, atlas_path):
     
     # by default, it uses `~/.cache/templateflow/`
     if atlas_source == "templateflow":
-        templateflow.conf.TF_HOME = os.path.join(os.getenv("HOME"), ".cache", "templateflow")
+        templateflow.conf.TF_HOME = templateflow.conf.TF_DEFAULT_HOME
         templateflow.conf.init_layout()
     # otherwise use user defined atlas path
     elif atlas_source == "user_define":
