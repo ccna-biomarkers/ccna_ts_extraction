@@ -306,10 +306,6 @@ if __name__ == '__main__':
             update_templateflow_path(atlas_name, atlas_path)
             for subject in subject_list:
                 print(f"sub-{subject}")
-                # TODO: loop through all
-                # Note from AB
-                # if multiple run, use run 2
-                # if multiple session, use ses 1
                 fmri = layout.get(return_type='type', subject=subject, space=template,
                                   desc='preproc', suffix='bold', extension='nii.gz')
                 brain_mask = layout.get(return_type='type', subject=subject, space=template,
