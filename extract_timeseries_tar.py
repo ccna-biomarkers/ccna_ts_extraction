@@ -229,18 +229,9 @@ def create_timeseries_root_dir(file_entitiles, output_dir):
 def download_atlases():
     """Download all atlases using ATLAS_METADATA."""
 
-    for atlas_name in ATLAS_METADATA.keys():
-        cur_atlas_meta = ATLAS_METADATA[atlas_name].copy()
-        if cur_atlas_meta['source'] == "templateflow":
-            for template in cur_atlas_meta['templates']:
-                for resolution in cur_atlas_meta['resolutions']:
-                    for dimension in cur_atlas_meta['dimensions']:
-                        description_keywords = {"dimension": dimension}
-                        print(f"-- {atlas_name}.{template}.{resolution}mm.{dimension}dim --")
-                        atlas = fetch_atlas_path(atlas_name,
-                                              resolution=resolution,
-                                              template=template,
-                                              description_keywords=description_keywords)
+    for template in templateflow.api.templates():
+        if "MNI152" in template:
+            templateflow.api.get(template)
 
 def bidsish_timeseries_file_name(file_entitiles, layout, atlas_name, dimension):
     """Create a BIDS-like file name to save extracted timeseries as tsv."""
